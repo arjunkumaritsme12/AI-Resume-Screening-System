@@ -474,112 +474,247 @@ with tab1:
 
 # ============ TAB 2: BATCH PROCESSING ============
 with tab2:
-    st.header("📊 Batch Processing")
-    st.markdown("Upload a CSV file with multiple resumes for batch matching against a job description.")
+    st.header("📊 Batch Resume Screening & Ranking")
+    st.markdown("**Upload multiple resumes and get an instant ranked list of the best candidates**")
     
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.subheader("📂 Upload Resumes CSV")
-        st.info("CSV should have columns: 'Resume' (and optionally 'Candidate' name)")
+        st.subheader("📂 Upload Multiple Resumes")
+        st.markdown("Upload resume files (PDF, DOCX, TXT) or a CSV with resume text")
         
-        csv_file = st.file_uploader("Upload CSV file", type=['csv'], key="batch_csv")
+        upload_type = st.radio(
+            "Upload method:",
+            ["Individual Files", "CSV File"],
+            key="batch_upload_type"
+        )
         
-        if csv_file:
-            try:
-                df = pd.read_csv(csv_file)
-                st.success(f"✓ Loaded {len(df)} resumes")
-                st.dataframe(df.head(3), use_container_width=True)
-            except Exception as e:
-                st.error(f"Error reading CSV: {str(e)}")
+        uploaded_files = []
+        batch_df = None
+        
+        if upload_type == "Individual Files":
+            uploaded_files = st.file_uploader(
+                "Drag and drop or select multiple resume files",
+                type=['pdf', 'docx', 'txt'],
+                accept_multiple_files=True,
+                key="batch_files"
+            )
+            if uploaded_files:
+                st.success(f"✓ Loaded {len(uploaded_files)} resume files")
+        else:
+            csv_file = st.file_uploader("Upload CSV (with 'Resume' column)", type=['csv'], key="batch_csv")
+            if csv_file:
+                try:
+                    batch_df = pd.read_csv(csv_file)
+                    st.success(f"✓ Loaded {len(batch_df)} resumes from CSV")
+                except Exception as e:
+                    st.error(f"Error reading CSV: {str(e)}")
     
     with col2:
         st.subheader("💼 Job Description")
+        st.markdown("Paste the job description to match resumes against")
         
         batch_jd = st.text_area(
-            "Paste job description for batch matching",
-            height=200,
-            placeholder="Paste the job description...",
+            "Job Description",
+            height=250,
+            placeholder="Paste the job description here...",
             key="batch_jd"
         )
     
     st.divider()
     
-    if st.button("🚀 Process Batch", use_container_width=True, type="primary"):
-        if not csv_file:
-            st.error("Please upload a CSV file")
-        elif not batch_jd or len(batch_jd.strip()) < 100:
-            st.error("Please provide a valid job description")
+    col_process, col_filter = st.columns([2, 1])
+    
+    with col_process:
+        process_btn = st.button("🚀 Analyze & Rank Candidates", use_container_width=True, type="primary")
+    
+    with col_filter:
+        min_score = st.slider("Minimum Match Score", 0, 100, 40, key="min_score_slider")
+    
+    if process_btn:
+        if not batch_jd or len(batch_jd.strip()) < 100:
+            st.error("❌ Please provide a valid job description (at least 100 characters)")
+        elif upload_type == "Individual Files" and not uploaded_files:
+            st.error("❌ Please upload at least one resume file")
+        elif upload_type == "CSV File" and batch_df is None:
+            st.error("❌ Please upload a CSV file with resumes")
         else:
-            with st.spinner("⏳ Processing batch..."):
+            with st.spinner("⏳ Processing resumes and ranking candidates..."):
                 try:
-                    df = pd.read_csv(csv_file)
-                    
                     results = []
-                    for idx, row in df.iterrows():
-                        resume_text = row.get('Resume', '')
-                        candidate_name = row.get('Candidate', f'Candidate {idx+1}')
-                        
-                        if resume_text and len(str(resume_text)) > 100:
-                            resume_data = st.session_state.parser.parse_resume(resume_text)
-                            ranked = st.session_state.ranker.rank_candidates([resume_data], batch_jd)
+                    
+                    if upload_type == "Individual Files":
+                        for idx, uploaded_file in enumerate(uploaded_files):
+                            candidate_name = Path(uploaded_file.name).stem
+                            text, error = extract_file_content(uploaded_file)
                             
-                            if ranked:
-                                result = ranked[0]
-                                result['candidate_name'] = candidate_name
-                                results.append(result)
+                            if error:
+                                st.warning(f"⚠️ Skipped {uploaded_file.name}: {error}")
+                            else:
+                                resume_data = st.session_state.parser.parse_resume(text)
+                                ranked = st.session_state.ranker.rank_candidates([resume_data], batch_jd)
+                                
+                                if ranked:
+                                    result = ranked[0]
+                                    result['candidate_name'] = candidate_name
+                                    result['file_name'] = uploaded_file.name
+                                    results.append(result)
+                    else:
+                        for idx, row in batch_df.iterrows():
+                            resume_text = row.get('Resume', '')
+                            candidate_name = row.get('Candidate', f'Candidate {idx+1}')
+                            
+                            if resume_text and len(str(resume_text)) > 100:
+                                resume_data = st.session_state.parser.parse_resume(resume_text)
+                                ranked = st.session_state.ranker.rank_candidates([resume_data], batch_jd)
+                                
+                                if ranked:
+                                    result = ranked[0]
+                                    result['candidate_name'] = candidate_name
+                                    result['file_name'] = candidate_name
+                                    results.append(result)
                     
                     if results:
-                        st.success(f"✓ Processed {len(results)} resumes")
+                        # Sort by overall score (descending)
+                        results_sorted = sorted(results, key=lambda x: x['overall_score'], reverse=True)
                         
-                        # Create results dataframe
-                        results_df = pd.DataFrame({
-                            'Candidate': [r['candidate_name'] for r in results],
-                            'Overall Score': [r['overall_score'] for r in results],
-                            'Skills Score': [r['skills_score'] for r in results],
-                            'Experience Score': [r['experience_score'] for r in results],
-                            'Education Score': [r['education_score'] for r in results],
-                            'Matched Skills': [', '.join(r['matched_skills']) for r in results],
-                            'Missing Skills': [', '.join(r['missing_skills']) for r in results]
-                        })
+                        # Filter by minimum score
+                        results_filtered = [r for r in results_sorted if r['overall_score'] >= min_score]
                         
-                        # Sort by overall score
-                        results_df = results_df.sort_values('Overall Score', ascending=False)
+                        st.success(f"✓ Processed {len(results)} resumes | Showing {len(results_filtered)} above {min_score}% threshold")
                         
                         st.divider()
-                        st.subheader("📈 Results Summary")
                         
-                        st.dataframe(results_df, use_container_width=True)
+                        # SUMMARY METRICS
+                        metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+                        with metric_col1:
+                            st.metric("Total Candidates", len(results))
+                        with metric_col2:
+                            st.metric("Qualified (80%+)", len([r for r in results if r['overall_score'] >= 80]))
+                        with metric_col3:
+                            st.metric("Good Fit (60-80%)", len([r for r in results if 60 <= r['overall_score'] < 80]))
+                        with metric_col4:
+                            best_score = max(results, key=lambda x: x['overall_score'])['overall_score']
+                            st.metric("Top Score", f"{best_score}%")
                         
-                        # Visualization
+                        st.divider()
+                        
+                        # RESULTS TABLE
+                        st.subheader("📋 Ranked Candidates")
+                        
+                        results_df = pd.DataFrame({
+                            'Rank': list(range(1, len(results_filtered) + 1)),
+                            'Candidate': [r['candidate_name'] for r in results_filtered],
+                            'Overall Score': [f"{r['overall_score']:.1f}%" for r in results_filtered],
+                            'Skills Match': [f"{r['skills_score']:.1f}%" for r in results_filtered],
+                            'Experience': [f"{r['experience_score']:.1f}%" for r in results_filtered],
+                            'Education': [f"{r['education_score']:.1f}%" for r in results_filtered],
+                        })
+                        
+                        st.dataframe(results_df, use_container_width=True, hide_index=True)
+                        
+                        # VISUALIZATION
+                        st.subheader("📊 Candidate Match Scores")
+                        
                         fig = px.bar(
-                            results_df.sort_values('Overall Score', ascending=True).tail(10),
-                            x='Overall Score',
-                            y='Candidate',
+                            x=[r['overall_score'] for r in results_filtered],
+                            y=[r['candidate_name'] for r in results_filtered],
                             orientation='h',
-                            color='Overall Score',
+                            color=[r['overall_score'] for r in results_filtered],
                             color_continuous_scale='RdYlGn',
-                            title='Top 10 Matched Candidates'
+                            range_color=[0, 100],
+                            title='Candidates Ranked by Match Score',
+                            labels={'x': 'Match Score (%)', 'y': 'Candidate'}
                         )
+                        fig.update_layout(height=400, showlegend=False)
                         st.plotly_chart(fig, use_container_width=True)
                         
-                        # Download results
+                        st.divider()
+                        
+                        # DETAILED PROFILES
+                        st.subheader("👥 Top Candidates Detailed Profiles")
+                        
+                        for idx, result in enumerate(results_filtered[:5], 1):
+                            with st.expander(f"#{idx} - {result['candidate_name']} ({result['overall_score']:.1f}%)"):
+                                profile_col1, profile_col2 = st.columns(2)
+                                
+                                with profile_col1:
+                                    st.markdown("**Scores:**")
+                                    st.text(f"• Overall: {result['overall_score']:.1f}%")
+                                    st.text(f"• Skills: {result['skills_score']:.1f}%")
+                                    st.text(f"• Experience: {result['experience_score']:.1f}%")
+                                    st.text(f"• Education: {result['education_score']:.1f}%")
+                                    
+                                    st.markdown("**Contact:**")
+                                    if result.get('email'):
+                                        st.text(f"📧 {result['email']}")
+                                    if result.get('phone'):
+                                        st.text(f"☎️ {result['phone']}")
+                                
+                                with profile_col2:
+                                    st.markdown("**Experience:**")
+                                    st.text(f"{result['experience_years']} years")
+                                    
+                                    st.markdown("**Matched Skills:**")
+                                    for skill in result['matched_skills'][:8]:
+                                        render_tag(skill)
+                                    if len(result['matched_skills']) > 8:
+                                        st.caption(f"+{len(result['matched_skills']) - 8} more skills")
+                                
+                        st.divider()
+                        
+                        # EXPORT OPTIONS
+                        st.subheader("📥 Export Results")
+                        
+                        # Prepare detailed CSV
+                        detailed_results = []
+                        for r in results_filtered:
+                            detailed_results.append({
+                                'Candidate': r['candidate_name'],
+                                'Overall_Score': round(r['overall_score'], 2),
+                                'Skills_Score': round(r['skills_score'], 2),
+                                'Experience_Score': round(r['experience_score'], 2),
+                                'Education_Score': round(r['education_score'], 2),
+                                'Years_Experience': r['experience_years'],
+                                'Matched_Skills': '; '.join(r['matched_skills']),
+                                'Missing_Skills': '; '.join(r['missing_skills']),
+                                'Email': r.get('email', ''),
+                                'Phone': r.get('phone', ''),
+                            })
+                        
+                        detailed_df = pd.DataFrame(detailed_results)
+                        
                         csv_buffer = io.BytesIO()
-                        results_df.to_csv(csv_buffer, index=False)
+                        detailed_df.to_csv(csv_buffer, index=False)
                         csv_buffer.seek(0)
                         
-                        st.download_button(
-                            label="📥 Download Results (CSV)",
-                            data=csv_buffer.getvalue(),
-                            file_name="resume_screening_results.csv",
-                            mime="text/csv",
-                            use_container_width=True
-                        )
+                        col_csv, col_json = st.columns(2)
+                        
+                        with col_csv:
+                            st.download_button(
+                                label="📊 Download as CSV",
+                                data=csv_buffer.getvalue(),
+                                file_name="ranked_candidates.csv",
+                                mime="text/csv",
+                                use_container_width=True
+                            )
+                        
+                        with col_json:
+                            json_data = detailed_df.to_json(orient='records', indent=2)
+                            st.download_button(
+                                label="📋 Download as JSON",
+                                data=json_data,
+                                file_name="ranked_candidates.json",
+                                mime="application/json",
+                                use_container_width=True
+                            )
                     else:
-                        st.warning("No valid resumes found in the uploaded file")
+                        st.warning("❌ No valid resumes could be processed")
                 
                 except Exception as e:
                     st.error(f"Error processing batch: {str(e)}")
+                    import traceback
+                    st.error(traceback.format_exc())
 
 
 # ============ TAB 3: SETTINGS ============
