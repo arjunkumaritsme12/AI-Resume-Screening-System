@@ -1,0 +1,23 @@
+
+    Junior Developer
+
+    ABOUT US
+    Growing tech startup looking for junior developers to join our team.
+
+    REQUIREMENTS
+    - 1-2 years development experience
+    - JavaScript or Python knowledge
+    - Basic HTML/CSS skills
+    - Git version control
+    - Problem-solving abilities
+    
+    NICE TO HAVE
+    - React experience
+    - API development
+    - Testing background
+    
+    EDUCATION
+    Bachelor's degree or bootcamp graduate
+    
+    SALARY: $60,000 - $80,000
+    

@@ -1,0 +1,26 @@
+
+    DevOps Engineer
+
+    THE OPPORTUNITY
+    Help us scale our infrastructure and deployment processes.
+
+    REQUIRED SKILLS
+    - 4+ years DevOps/infrastructure experience
+    - Kubernetes orchestration
+    - Docker containerization
+    - AWS or Azure cloud platform
+    - Terraform or CloudFormation (IaC)
+    - CI/CD pipeline tools (Jenkins, GitLab CI)
+    - Linux administration
+    - Bash/Python scripting
+    
+    PREFERRED
+    - Monitoring tools experience (Prometheus, Grafana)
+    - Helm experience
+    - Go programming language
+    
+    EDUCATION
+    Bachelor's in Computer Science or equivalent experience
+    
+    SALARY: $110,000 - $150,000
+    

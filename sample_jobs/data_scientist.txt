@@ -1,0 +1,25 @@
+
+    Data Scientist - AI/ML Focus
+
+    POSITION OVERVIEW
+    Join our data science team to build machine learning solutions.
+
+    REQUIRED QUALIFICATIONS
+    - 5+ years data science experience
+    - Python programming expertise
+    - TensorFlow or PyTorch
+    - SQL and database knowledge
+    - Statistical analysis and ML algorithms
+    - Experience with big data tools (Hadoop, Spark)
+    - Cloud platform experience (AWS, GCP)
+    
+    NICE TO HAVE
+    - NLP/Computer Vision experience
+    - Deep Learning specialization
+    - Published research papers
+    
+    EDUCATION
+    Master's degree in Computer Science, Statistics, or related field
+    
+    SALARY: $120,000 - $160,000
+    

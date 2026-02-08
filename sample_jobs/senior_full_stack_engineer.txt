@@ -1,0 +1,26 @@
+
+    Senior Full Stack Engineer - Remote
+
+    ABOUT THE ROLE
+    We are seeking an experienced Full Stack Engineer to lead our technical initiatives.
+
+    REQUIREMENTS
+    - 6+ years software development experience
+    - Expert-level: Python, JavaScript/TypeScript
+    - React.js for frontend development
+    - Node.js or similar backend framework
+    - AWS cloud platform experience (EC2, S3, Lambda)
+    - SQL and NoSQL database expertise
+    - Docker and Kubernetes knowledge
+    - Team leadership experience
+    
+    NICE TO HAVE
+    - Machine Learning background
+    - Microservices architecture
+    - GraphQL experience
+    
+    EDUCATION
+    Bachelor's degree in Computer Science or related field
+
+    SALARY: $150,000 - $200,000
+    
