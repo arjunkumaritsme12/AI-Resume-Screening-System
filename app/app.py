@@ -469,7 +469,7 @@ with tab1:
                 elif score >= 40:
                     st.info(f"🔵 **Moderate Match ({score}%)** - Could be potential with training", icon="ℹ️")
                 else:
-                    st.error(f"🔴 **Poor Match ({score}%)** - Not recommended at this time", icon="✗")
+                    st.error(f"🔴 **Poor Match ({score}%)** - Not recommended at this time", icon="❌")
 
 
 # ============ TAB 2: BATCH PROCESSING ============
