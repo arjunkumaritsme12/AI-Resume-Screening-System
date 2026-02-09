@@ -860,7 +860,7 @@ st.markdown("""
 ---
 <div style='text-align: center'>
     <p style='color: grey; font-size: 12px;'>
-        AI Resume Screening System v1.0 | Built with Streamlit | © 2024
+        AI Resume Screening System v1.0 | Built with Streamlit | © 2025
     </p>
 </div>
 """, unsafe_allow_html=True)
